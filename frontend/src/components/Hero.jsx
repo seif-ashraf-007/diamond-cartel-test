@@ -256,66 +256,6 @@ const Hero = () => {
             className="hidden lg:block w-1/2 relative"
           >
             <div className="relative w-[500px] h-[500px] mx-auto">
-              {/* Diamond glow effect */}
-              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-white/20 blur-3xl"></div>
-
-              {/* Diamond container */}
-              <motion.div
-                animate={{
-                  rotateY: [0, 360],
-                  rotateZ: [0, 15, 0, -15, 0],
-                }}
-                transition={{
-                  rotateY: { duration: 20, repeat: Infinity, ease: "linear" },
-                  rotateZ: {
-                    duration: 15,
-                    repeat: Infinity,
-                    ease: "easeInOut",
-                  },
-                }}
-                className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-80 h-80 flex items-center justify-center"
-                style={{ perspective: "1000px" }}
-              >
-                {/* Diamond facets */}
-                <div className="relative w-64 h-64">
-                  <motion.div
-                    animate={{
-                      rotateX: [0, 360],
-                      rotateZ: [0, -360],
-                    }}
-                    transition={{
-                      duration: 25,
-                      repeat: Infinity,
-                      ease: "linear",
-                    }}
-                    className="absolute inset-0 flex items-center justify-center"
-                  >
-                    <FaDiamond className="text-white/90 text-[200px]" />
-                  </motion.div>
-
-                  {/* Light reflections */}
-                  {[...Array(5)].map((_, i) => (
-                    <motion.div
-                      key={i}
-                      className="absolute inset-0 flex items-center justify-center"
-                      animate={{
-                        opacity: [0, 0.8, 0],
-                        scale: [0.8, 1.2, 0.8],
-                        rotate: [0, 180, 360],
-                      }}
-                      transition={{
-                        duration: 4,
-                        delay: i * 0.8,
-                        repeat: Infinity,
-                        ease: "easeInOut",
-                      }}
-                    >
-                      <div className="w-20 h-20 bg-white/30 blur-md"></div>
-                    </motion.div>
-                  ))}
-                </div>
-              </motion.div>
-
               {/* Light rays */}
               {[...Array(8)].map((_, i) => (
                 <motion.div
