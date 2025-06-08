@@ -36,7 +36,7 @@ const Product = () => {
     currency,
     addItemToWishlist,
     removeItemFromWishlist,
-    wishlist
+    wishlist,
   } = useContext(ShopContext);
 
   const [product, setProduct] = useState(null);
@@ -54,8 +54,10 @@ const Product = () => {
 
       try {
         // Check if product exists in context first
-        const contextProduct = products?.find(p => p._id === productId) || diamondProducts?.find(p => p._id === productId);
-        
+        const contextProduct =
+          products?.find((p) => p._id === productId) ||
+          diamondProducts?.find((p) => p._id === productId);
+
         if (contextProduct) {
           setProduct(contextProduct);
           setLoading(false);
@@ -63,19 +65,20 @@ const Product = () => {
         }
 
         // If not in context, fetch from API
-        const response = await axios.get(`${VITE_BACKEND_URL}/product/${productId}`);
+        const response = await axios.get(
+          `${VITE_BACKEND_URL}/product/${productId}`
+        );
         if (response.data && response.data.product) {
           setProduct(response.data.product);
         } else {
-          setError('Product not found');
-          toast.error('Product not found');
+          setError("Product not found");
+          toast.error("Product not found");
         }
         console.log("product: ", response.data.product);
-        
       } catch (err) {
-        console.error('Error loading product:', err);
-        setError('Failed to load product');
-        toast.error('Failed to load product details');
+        console.error("Error loading product:", err);
+        setError("Failed to load product");
+        toast.error("Failed to load product details");
       } finally {
         setLoading(false);
       }
@@ -582,6 +585,17 @@ const Product = () => {
                 </span>
               </div>
             )}
+
+            {product.carats && (
+              <div className="flex flex-col">
+                <span className="text-xs uppercase tracking-wider text-gray-500 mb-1">
+                  Carat
+                </span>
+                <span className="text-sm font-medium text-gray-900 capitalize">
+                  {product.carats}
+                </span>
+              </div>
+            )}
           </div>
         </div>
       </>
@@ -612,9 +626,7 @@ const Product = () => {
       <div className="bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 my-0">
           {/* Breadcrumb Navigation */}
-          <div className="flex items-center mb-8 text-sm">
-            
-          </div>
+          <div className="flex items-center mb-8 text-sm"></div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
             {/* Left side - Images */}
@@ -740,7 +752,12 @@ const Product = () => {
                 {product.description && (
                   <div className="p-6 border-b border-gray-100">
                     <p className="text-md leading-relaxed text-gray-700">
-                      {product.description}
+                      <div
+                        className="prose" // optional Tailwind typography plugin class
+                        dangerouslySetInnerHTML={{
+                          __html: product.description,
+                        }}
+                      />
                     </p>
                   </div>
                 )}
@@ -999,6 +1016,9 @@ const Product = () => {
                   </>
                 )}
 
+                {/* Jewelry Properties */}
+                {product.productType === "jewelry" && renderJewelryProperties()}
+
                 {/* Details & Care */}
                 <div className="p-6">
                   <h3 className="text-md font-semibold text-gray-800 mb-4">
@@ -1052,7 +1072,9 @@ const Product = () => {
                 <button
                   onClick={handleToggleWishlist}
                   disabled={wishlistLoading}
-                  className={`flex items-center justify-center px-6 py-3 border border-gray-300 rounded-md shadow-sm text-base font-medium text-gray-700 hover:bg-gray-50 transition-colors ${wishlistLoading ? "opacity-50 cursor-not-allowed" : ""}`}
+                  className={`flex items-center justify-center px-6 py-3 border border-gray-300 rounded-md shadow-sm text-base font-medium text-gray-700 hover:bg-gray-50 transition-colors ${
+                    wishlistLoading ? "opacity-50 cursor-not-allowed" : ""
+                  }`}
                 >
                   <AnimatePresence mode="wait" initial={false}>
                     {isInWishlist(productId) ? (
@@ -1061,7 +1083,11 @@ const Product = () => {
                         initial={{ scale: 0.8, opacity: 0 }}
                         animate={{ scale: 1, opacity: 1 }}
                         exit={{ scale: 0.8, opacity: 0 }}
-                        transition={{ type: "spring", stiffness: 400, damping: 20 }}
+                        transition={{
+                          type: "spring",
+                          stiffness: 400,
+                          damping: 20,
+                        }}
                         className="mr-2"
                       >
                         <FaHeart className="text-red-500" />
@@ -1072,7 +1098,11 @@ const Product = () => {
                         initial={{ scale: 0.8, opacity: 0 }}
                         animate={{ scale: 1, opacity: 1 }}
                         exit={{ scale: 0.8, opacity: 0 }}
-                        transition={{ type: "spring", stiffness: 400, damping: 20 }}
+                        transition={{
+                          type: "spring",
+                          stiffness: 400,
+                          damping: 20,
+                        }}
                         className="mr-2"
                       >
                         <FaRegHeart />

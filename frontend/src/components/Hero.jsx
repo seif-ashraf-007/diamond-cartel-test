@@ -255,30 +255,7 @@ const Hero = () => {
             transition={{ duration: 1, delay: 0.5 }}
             className="hidden lg:block w-1/2 relative"
           >
-            <div className="relative w-[500px] h-[500px] mx-auto">
-              {/* Light rays */}
-              {[...Array(8)].map((_, i) => (
-                <motion.div
-                  key={i}
-                  className="absolute top-1/2 left-1/2 h-1 bg-white/20"
-                  style={{
-                    transformOrigin: "0 50%",
-                    rotate: `${i * 45}deg`,
-                    width: "150px",
-                  }}
-                  animate={{
-                    opacity: [0.1, 0.5, 0.1],
-                    width: ["150px", "200px", "150px"],
-                  }}
-                  transition={{
-                    duration: 3,
-                    delay: i * 0.2,
-                    repeat: Infinity,
-                    ease: "easeInOut",
-                  }}
-                />
-              ))}
-            </div>
+            <div className="relative w-[500px] h-[500px] mx-auto"></div>
           </motion.div>
         </div>
       </motion.div>
