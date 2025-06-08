@@ -996,10 +996,12 @@ const MobileFilterPanel = ({
             
             {/* Carat Range Markers */}
             <div className="mt-2 flex justify-between text-xs text-gray-500 px-1 mb-4">
-              <span>0.2</span>
-              <span>1</span>
-              <span>5</span>
-              <span>25</span>
+            <span>0.2</span>
+              <span>10</span>
+              <span>20</span>
+
+              <span>30</span>
+              <span>40</span>
               <span>50</span>
             </div>
           </div>
