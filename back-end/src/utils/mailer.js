@@ -18,7 +18,7 @@ export const sendEmail = async (to, subject, htmlContent) => {
     if (!to) throw new Error("Recipient email is missing");
 
     const mailOptions = {
-      from: process.env.TRANSPORTER_USER,
+      from: `"Diamond Cartel" <${process.env.TRANSPORTER_USER}>`,
       to,
       subject,
       html: htmlContent,

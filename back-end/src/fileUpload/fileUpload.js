@@ -9,6 +9,9 @@ const __dirname = path.dirname(__filename);
 
 const fileUpload = (folderName) => {
   const storage = multer.diskStorage({
+    limits: {
+      fileSize: 10 * 1024 * 1024 // 10MB max file size
+    },
     destination: function (req, file, cb) {
       cb(null, `uploads/${folderName}`);
     },

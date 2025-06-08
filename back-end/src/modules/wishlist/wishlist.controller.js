@@ -8,111 +8,173 @@ import dotenv from "dotenv";
 
 dotenv.config();
 
-const sendWishlistEmail = catchError(async (req, res, next) => {
-  // Check if email configuration is set up
-  if (!process.env.TRANSPORTER_USER || !process.env.TRANSPORTER_PASS || !process.env.OWNER_EMAIL) {
-    console.error("Email configuration is missing. Please set up TRANSPORTER_USER, TRANSPORTER_PASS, and OWNER_EMAIL in your .env file");
-    return next(new AppError("Email service is not configured. Please contact the administrator.", 500));
-  }
+let FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:5000";
 
-  const userId = req.session?.userId; // Ensure session exists
-  let wishlistItemsHtml = "";
+const sendWishlistEmail = catchError(async (req, res, next) => {
+  // Use authenticated user ID if available, fall back to session ID
+  const userId = req.user?._id.toString() || req.session?.userId;
   let totalPrice = 0;
+  const formData = req.body;
 
   let wishlist = null;
 
-  if (userId) {
-    wishlist = await Wishlist.findOne({ userId }).populate(
-      "wishlistItems.product"
-    );
+  if (formData.itemsDetails) {
+    wishlist = formData.itemsDetails;
   }
 
-  // Generate HTML for the wishlist items from database if they exist
-  if (wishlist && wishlist.wishlistItems.length > 0) {
-    wishlistItemsHtml = wishlist.wishlistItems
-      .map((item) => {
-        if (item.product) {
-          totalPrice += item.product.price * item.quantity;
-          return `<li>${item.product.title} - Quantity: ${
-            item.quantity
-          } - Price: $${item.product.price.toFixed(2)}</li>`;
-        }
-        return "";
-      })
-      .join("");
-  }
-
-  const formData = req.body;
-
-  // Check if we have manually formatted items from frontend
-  const hasFormattedItems =
-    formData.itemsDetails && typeof formData.itemsDetails === "string";
-
-  // Filter out itemsDetails from form fields display if it exists
+  // Process form data into a nicely formatted table
   let formFieldsHtml = Object.keys(formData)
-    .filter((key) => key !== "itemsDetails")
     .map((key) => {
-      return `<p><strong>${key.replace(/_/g, " ")}:</strong> ${
-        formData[key] || "N/A"
-      }</p>`;
+      // Skip empty values
+      if (!formData[key]) return "";
+
+      // Format the label for better display
+      const label = key
+        .replace(/_/g, " ")
+        .split(" ")
+        .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+        .join(" ");
+
+      // Skip itemsDetails since we'll handle it separately
+      if (key === "itemsDetails") return "";
+
+      return `
+        <tr>
+          <td style="padding: 8px 15px; border-bottom: 1px solid #e2e8f0; font-weight: 600; width: 40%;">${label}</td>
+          <td style="padding: 8px 15px; border-bottom: 1px solid #e2e8f0;">${formData[key]}</td>
+        </tr>
+      `;
     })
+    .filter((item) => item !== "") // Filter out empty entries
     .join("");
 
-  // Create wishlist section HTML
-  let wishlistSection = "";
-
-  if (wishlist && wishlist.wishlistItems.length > 0) {
-    // If we have wishlist from database
-    wishlistSection = `<h4>Wishlist Items:</h4>
-      <ul>${wishlistItemsHtml}</ul>
-      <p><strong>Total Price:</strong> $${totalPrice.toFixed(2)}</p>`;
-  } else if (hasFormattedItems) {
-    // If we have formatted items from frontend
-    const itemsHtml = formData.itemsDetails
-      .split("@@")
+  // Create a properly formatted wishlist items section
+  let formattedWishlistItems = "";
+  if (formData.itemsDetails) {
+    formattedWishlistItems = formData.itemsDetails
       .map((item) => {
-        const [imageUrl, title, quantity, price] = item.split("||");
-        return `<li style="margin-bottom: 15px; display: flex; align-items: center;">
-        ${
-          imageUrl
-            ? `<img src="${imageUrl}" alt="${title}" style="width: 50px; height: 50px; object-fit: cover; margin-right: 10px; border-radius: 4px;">`
-            : ""
-        }
-        <div>
-          <strong>${title}</strong><br>
-          ${quantity} - ${price}
-        </div>
-      </li>`;
+        totalPrice += item.price * item.quantity;
+        return `
+        <tr>
+          <td style="padding: 12px 15px; border-bottom: 1px solid #e2e8f0;">
+            <img src="${item.image}" alt="${
+          item.name
+        }" style="width: 50px; height: 50px; object-fit: cover; margin-right: 10px;" />
+            <div>
+              <strong>${item.name}</strong><br>
+              <span style="color: #64748b; font-size: 14px;">Quantity: ${
+                item.quantity
+              }</span>
+            </div>
+          </td>
+          <td style="padding: 12px 15px; border-bottom: 1px solid #e2e8f0; text-align: right;">$${item.price.toFixed(
+            2
+          )}</td>
+          <td style="padding: 12px 15px; border-bottom: 1px solid #e2e8f0; text-align: right;">$${item.total.toFixed(
+            2
+          )}</td>
+          <td style="padding: 12px 15px; border-bottom: 1px solid #e2e8f0; text-align: right;"><a href="${FRONTEND_URL}/product/${
+          item.id
+        }">View Product</a></td>
+        </tr>
+      `;
       })
       .join("");
-
-    wishlistSection = `<h4>Wishlist Items:</h4>
-      <ul style="list-style-type: none; padding-left: 0;">${itemsHtml}</ul>
-      <p><strong>Total Value:</strong> ${formData.totalValue}</p>`;
-  } else {
-    // No wishlist items found
-    wishlistSection =
-      "<p><em>No wishlist items included in this submission.</em></p>";
   }
 
-  const emailHtml = `
-    ${
-      wishlist || hasFormattedItems
-        ? "<h2>Wishlist Submission</h2>"
-        : "New Quote Request"
-    }
-    ${formFieldsHtml}
-    ${wishlistSection}
-  `;
+  // Create form data section if there's any form data
+  let formSection = "";
+  if (formFieldsHtml) {
+    formSection = `
+      <div style="margin-bottom: 30px; background-color: #f8fafc; border-radius: 8px; padding: 20px;">
+        <h2 style="color: #1e293b; margin-top: 0; margin-bottom: 15px; font-size: 18px; border-bottom: 2px solid #e2e8f0; padding-bottom: 10px;">Request Details</h2>
+        <table style="width: 100%; border-collapse: collapse;">
+          ${formFieldsHtml}
+        </table>
+      </div>
+    `;
+  }
 
-  // Get submitter's name from form data
-  const submitterName = formData.first_name || formData.name;
+  // Create wishlist section
+  let wishlistSection = "";
+
+  if (wishlist) {
+    wishlistSection = `
+      <div style="margin-bottom: 30px; background-color: #f8fafc; border-radius: 8px; padding: 20px;">
+        <h2 style="color: #1e293b; margin-top: 0; margin-bottom: 15px; font-size: 18px; border-bottom: 2px solid #e2e8f0; padding-bottom: 10px;">Wishlist Items</h2>
+        
+        <table style="width: 100%; border-collapse: collapse; margin: 20px auto;">
+          <thead>
+            <tr style="background-color: #f1f5f9;">
+              <th style="padding: 12px 15px; text-align: left; border-bottom: 2px solid #e2e8f0;">Product</th>
+              <th style="padding: 12px 15px; text-align: center; border-bottom: 2px solid #e2e8f0;">Price Per Unit</th>
+              <th style="padding: 12px 15px; text-align: right; border-bottom: 2px solid #e2e8f0;">Total Price</th>
+            <th style="padding: 12px 15px; text-align: right; border-bottom: 2px solid #e2e8f0;">View Product</th>
+              </tr>
+          </thead>
+          <tbody>
+            ${formattedWishlistItems}
+          </tbody>
+          <tfoot>
+            <tr>
+              <td colspan="3" style="padding: 12px 15px; text-align: right; font-weight: 600; border-top: 2px solid #e2e8f0;">Total:</td>
+              <td style="padding: 12px 15px; text-align: right; font-weight: 600; border-top: 2px solid #e2e8f0;">$${totalPrice.toFixed(
+                2
+              )}</td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+    `;
+  } else {
+    wishlistSection = `
+      <div style="margin-bottom: 30px; background-color: #f8fafc; border-radius: 8px; padding: 20px;">
+        <h2 style="color: #1e293b; margin-top: 0; margin-bottom: 15px; font-size: 18px; border-bottom: 2px solid #e2e8f0; padding-bottom: 10px;">Wishlist Items</h2>
+        <p style="color: #64748b; font-style: italic;">No wishlist items included in this submission.</p>
+      </div>
+    `;
+  }
+
+  // Assemble the complete email template
+  const emailHtml = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>${wishlist ? "Wishlist Submission" : "Quote Request"}</title>
+    </head>
+    <body style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #333; background-color: #f9fafb; margin: 0; padding: 0;">
+      <div style="max-width: 600px; margin: 10px auto; background-color: #ffffff; padding: 30px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.05);">
+        
+        <!-- Header -->
+        <div style="text-align: center; margin-bottom: 30px; padding-bottom: 20px; border-bottom: 1px solid #e2e8f0;">
+          <h1 style="color: #1e293b; margin-top: 0; margin-bottom: 10px; font-size: 24px;">${
+            wishlist ? "Wishlist Submission" : "Quote Request"
+          }</h1>
+          <p style="color: #64748b; margin: 0;">Received on ${new Date().toLocaleDateString()} at ${new Date().toLocaleTimeString()}</p>
+        </div>
+        
+        <!-- Form Data Section -->
+        ${formSection}
+        
+        <!-- Wishlist Section -->
+        ${wishlistSection}
+        
+        <!-- Footer -->
+        <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #e2e8f0; text-align: center; color: #94a3b8; font-size: 14px;">
+          <p>All rights reserved, @2025 Diamond Cartel</p>
+        </div>
+      </div>
+    </body>
+    </html>
+  `;
 
   try {
     const ownerEmail = process.env.OWNER_EMAIL;
     await sendEmail(
       ownerEmail,
-      submitterName ? `New request from ${submitterName}` : "New quote request",
+      "New wishlist request from " + userId,
       emailHtml
     );
     res.json({

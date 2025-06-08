@@ -38,7 +38,6 @@ function App() {
         <Route path="/about" element={<About />} />
         <Route path="/contact" element={<Contact />} />
         <Route path="/wishlist" element={<Wishlist />} />
-        <Route path="/request-quote" element={<Quote />} />
         <Route path="/products/jewellery/bracelets" element={<Bracelets />} />
         <Route path="/products/jewellery/earrings" element={<Earrings />} />
         <Route path="/products/jewellery/necklaces" element={<Necklaces />} />
@@ -46,7 +45,10 @@ function App() {
           path="/products/jewellery/engagement-rings"
           element={<EngagementRings />}
         />
-        <Route path="/products/jewellery/engagement-rings-edit" element={<EngagementRingsEdit />} />
+        <Route
+          path="/products/jewellery/engagement-rings-edit"
+          element={<EngagementRingsEdit />}
+        />
         <Route
           path="/products/jewellery/wedding-bands"
           element={<WeddingBands />}
