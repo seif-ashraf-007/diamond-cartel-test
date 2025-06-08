@@ -65,13 +65,13 @@ const MobileFilterPanel = ({
   if (!isMobileFilterOpen) return null;
 
   // Local state for carat values
-  const [minCarat, setMinCarat] = useState(caratRange[0] || 0.01);
-  const [maxCarat, setMaxCarat] = useState(caratRange[1] || 10);
+  const [minCarat, setMinCarat] = useState(caratRange[0] || 0.2);
+  const [maxCarat, setMaxCarat] = useState(caratRange[1] || 50);
 
   // Update local state when props change
   useEffect(() => {
-    setMinCarat(caratRange[0] !== undefined ? caratRange[0] : 0.01);
-    setMaxCarat(caratRange[1] !== undefined ? caratRange[1] : 10);
+    setMinCarat(caratRange[0] !== undefined ? caratRange[0] : 0.2);
+    setMaxCarat(caratRange[1] !== undefined ? caratRange[1] : 50);
   }, [caratRange]);
 
   // Toggle category selection
@@ -134,18 +134,17 @@ const MobileFilterPanel = ({
 
   // Convert from linear slider value to logarithmic carat value
   const sliderToCaratValue = (sliderValue) => {
-    // Linear mapping from 0.01-5 to 0.01-10
-    // This ensures the slider max value directly corresponds to 10 carats
+    // Linear mapping from 0.1-25 to 0.2-50
     const result = sliderValue * 2;
-    // Ensure we never exceed 10
-    return Math.min(10, result);
+    // Ensure we never exceed 50
+    return Math.min(50, result);
   };
   
   // Convert from carat value to linear slider value
   const caratToSliderValue = (caratValue) => {
-    // Linear mapping from 0.01-10 to 0.01-5
+    // Linear mapping from 0.2-50 to 0.1-25
     // Ensure we don't exceed our bounds
-    const validCarat = Math.min(10, Math.max(0.01, caratValue));
+    const validCarat = Math.min(50, Math.max(0.2, caratValue));
     // Divide by 2 to get slider value
     return validCarat / 2;
   };
@@ -154,6 +153,13 @@ const MobileFilterPanel = ({
   const formatCaratValue = (value) => {
     return value.toFixed(2).replace(/\.?0+$/, "");
   };
+
+  const debouncedCaratChange = useCallback(
+    debounce((min, max) => {
+      onCaratChange({ min, max });
+    }, 500),
+    [onCaratChange]
+  );
 
   // Handle slider change (values come as array [min, max])
   const handleCaratSliderChange = (values) => {
@@ -170,31 +176,7 @@ const MobileFilterPanel = ({
     setMaxCarat(max);
     
     // Call the API updates
-    onCaratChange({ min, max });
-  };
-
-  // Handle min carat input directly
-  const handleMinCaratInput = (e) => {
-    const value = e.target.value;
-    const numberValue = value === "" ? "" : Number(value);
-    setMinCarat(numberValue);
-    
-    if (value !== "") {
-      const min = Math.max(0, Math.min(numberValue, 60));
-      onCaratChange({ min, max: maxCarat });
-    }
-  };
-  
-  // Handle max carat input directly
-  const handleMaxCaratInput = (e) => {
-    const value = e.target.value;
-    const numberValue = value === "" ? "" : Number(value);
-    setMaxCarat(numberValue);
-    
-    if (value !== "") {
-      const max = Math.max(0, Math.min(numberValue, 60));
-      onCaratChange({ min: minCarat, max });
-    }
+    debouncedCaratChange(min, max);
   };
 
   return (
@@ -963,12 +945,12 @@ const MobileFilterPanel = ({
             <div className="mb-4 flex justify-between">
               <div className="text-center">
                 <span className="block text-sm font-medium text-gray-700">Min</span>
-                <span className="text-lg font-semibold">{formatCaratValue(minCarat || 0.01)}</span>
+                <span className="text-lg font-semibold">{formatCaratValue(minCarat || 0.2)}</span>
                 <span className="text-xs text-gray-500 ml-1">ct</span>
               </div>
               <div className="text-center">
                 <span className="block text-sm font-medium text-gray-700">Max</span>
-                <span className="text-lg font-semibold">{formatCaratValue(maxCarat || 10)}</span>
+                <span className="text-lg font-semibold">{formatCaratValue(maxCarat || 50)}</span>
                 <span className="text-xs text-gray-500 ml-1">ct</span>
               </div>
             </div>
@@ -977,14 +959,14 @@ const MobileFilterPanel = ({
             <div className="px-1">
               <Slider
                 range
-                min={0.01}
-                max={5}  /* Slider range 0-5 maps to 0-10 carats */
-                step={0.01}
-                defaultValue={[0.01, 5]}
+                min={0.1}
+                max={25}  /* Slider range 0.1-25 maps to 0.2-50 carats */
+                step={0.005}
+                defaultValue={[0.1, 25]}
                 value={[
                   // Convert from actual carat values to slider values
-                  caratToSliderValue(parseFloat(minCarat) || 0.01), 
-                  caratToSliderValue(parseFloat(maxCarat) || 10)
+                  caratToSliderValue(parseFloat(minCarat) || 0.2), 
+                  caratToSliderValue(parseFloat(maxCarat) || 50)
                 ]}
                 allowCross={false}
                 pushable={0.01}
@@ -1014,11 +996,13 @@ const MobileFilterPanel = ({
             
             {/* Carat Range Markers */}
             <div className="mt-2 flex justify-between text-xs text-gray-500 px-1 mb-4">
-              <span>0.01</span>
-              <span>0.25</span>
-              <span>1</span>
-              <span>5</span>
+            <span>0.2</span>
               <span>10</span>
+              <span>20</span>
+
+              <span>30</span>
+              <span>40</span>
+              <span>50</span>
             </div>
           </div>
 
