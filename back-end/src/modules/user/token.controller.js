@@ -23,7 +23,7 @@ const getUserToken = catchError(async (req, res) => {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "strict",
-      maxAge: 10 * 365 * 24 * 60 * 60 * 1000, // 10 years (a very long duration)
+      maxAge: 24 * 60 * 60 * 1000, // 24 hours
     });
 
     res.status(200).json({
